@@ -14,7 +14,7 @@ function setup() {
     pallete = new Pallete();
     pallete.init();
 
-    bkg_color = pallete.colors.WHITE;
+    bkg_color = Pallete.brighten(pallete.colors.GREY, 0.5);
 
     gameTimer = new Timer(TIMER_AMT);
 
