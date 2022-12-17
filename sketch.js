@@ -41,23 +41,12 @@ function draw() {
 
         rope.handleKeyboard();
         rope.adjust();
-        let f = rope.checkFood();
-        if (f) {
-            let e = new Emitter(f.pos.x, f.pos.y, f.color);
-            e.init();
-            emitters.push(e);
-            addFood();
-        }
+
+        eat();
 
         food = food.filter(f => f.active);
         if (!food.length)
             addFood();
-
-        for (let fader of faders) {
-            fader.update();
-        }
-
-        faders = faders.filter((f) => f.active);
 
         for (let f of food) {
             if (f.state === Food.state.MOBILE)
@@ -66,12 +55,18 @@ function draw() {
                 f.decay();
         }
 
-        for (let e of emitters) {
-            e.update();
+        for (let fader of faders) {
+            fader.update();
         }
 
-        emitters = emitters.filter(e => e.active);
+        faders = faders.filter((f) => f.active);
     }
+
+    for (let e of emitters) {
+        e.update();
+    }
+
+    emitters = emitters.filter(e => e.active);
 
     for (let f of food) {
         f.pulse();
@@ -182,5 +177,73 @@ function addFood() {
     let count = random(2);
     for (let i = 0; i < count; i++) {
         food.push(new Food(random(width), random(height), Food.getRandomState()));
+    }
+}
+
+function eat() {
+    let collision = knotFoodCollision();
+
+    if (!collision.collision)
+        return null;
+
+    let f = collision.f;
+    let k = collision.k;
+
+    score += getScoreAmt(k.label, f.state);
+
+    switch (f.state) {
+        case Food.state.DESTROY: {
+            rope.knots.splice(collision.iter, 1);
+            if (!rope.knots.length)
+                break;
+            rope.head = rope.knots[0];
+            rope.recolorKnots();
+            break;
+        }
+        case Food.state.CREATE: {
+            rope.knots.push(new Dot(k.x, k.y, rope.knotColor, k.radius, k.label));
+            break;
+        }
+        case Food.state.SHUFFLE: rope.shuffleKnots(); break;
+    }
+
+    faders.push(new Fader(f.pos.x, f.pos.y, k.label, 100));
+    f.active = false;
+
+
+    let e = new Emitter(f.pos.x, f.pos.y, f.color);
+    e.init();
+    emitters.push(e);
+
+    addFood();
+}
+
+function knotFoodCollision() {
+    let f = null;
+    let k = null;
+    let iter = -1;
+    let collision = false;
+    for (let i = 0; i < rope.knots.length; i++) {
+        let knot = rope.knots[i];
+        for (let fd of food) {
+            if (knot.collides(fd)) {
+                f = fd;
+                k = knot;
+                collision = true;
+                iter = i;
+                break;
+            }
+        }
+        if (collision)
+            break;
+    }
+    return { collision, f, k, iter };
+}
+
+function getScoreAmt(knotLabel, foodState) {
+    switch (foodState) {
+        case Food.state.DOUBLE: return knotLabel * 2;
+        case Food.state.TRIPLE: return knotLabel * 3
+        default: return knotLabel;
     }
 }
