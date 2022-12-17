@@ -5,6 +5,10 @@ const ROPE_WEIGHT = 3;
 const KNOT_SPEED = 8;
 
 class Dot {
+  static copy(dot) {
+    return new Dot(dot.pos.x, dot.pos.y, dot.color, dot.radius);
+  }
+
   constructor(x, y, _color, radius, label) {
     this.pos = createVector(x, y);
     this.color = _color || pallete.colors.BLACK;

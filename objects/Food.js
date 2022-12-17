@@ -11,6 +11,10 @@ class Food extends Dot {
       CREATE: 8,
     }
 
+    static getRandomState() {
+      return Math.round(random(Object.keys(Food.state).length-1))
+    }
+
     constructor(x, y, state) {
       super(x, y, null, 0, '');
       this.state = state || Food.state.NORMAL;
@@ -28,6 +32,9 @@ class Food extends Dot {
       this.yoff = 0.001;
       this.decayCountdownAmt = 3;
       this.decayTimer = null;
+      this.active = true;
+
+      this.setState();
     }
     
     getLabel() {
@@ -86,15 +93,15 @@ class Food extends Dot {
       }
     }
     
-    setRandomState() {
-      this.state = Math.round(random(Object.keys(Food.state).length-1));
+    setState() {
       // this.state = 3;
       this.label = this.getLabel();
       this.defaultColor = this.getColor();
       this.radius = this.getDiameter();
       this.textSize = this.getTextSize();
-      if (this.state === Food.state.DECAY)
+      if (this.state === Food.state.DECAY) {
         this.decayTimer = new Timer(this.decayCountdownAmt);
+      }
     }
   
     update(x, y) {
@@ -128,10 +135,7 @@ class Food extends Dot {
     
     decay() {
       this.decayTimer.update();
-      if (!this.decayTimer.active) {
-        this.update(random(width), random(height));
-        this.setRandomState();
-      }
+      this.active = this.decayTimer.active;
     }
   
     draw() {

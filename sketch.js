@@ -1,15 +1,18 @@
 let rope;
-let food;
+let food = [];
 let score = 0;
 let faders = [];
 let bkg_color;
 let pallete;
+let emitters = [];
 
 let TIMER_AMT = 60;
 let gameTimer;
 
+let MAX_FOOD = 20;
+
 function setup() {
-    createCanvas(1600, 1200);
+    createCanvas(1200, 800);
 
     pallete = new Pallete();
     pallete.init();
@@ -21,7 +24,7 @@ function setup() {
     rope = new Rope(width / 2, height / 2, 5);
     rope.build();
 
-    createFood(random(width), random(height), Food.state.NORMAL);
+    addFood();
 }
 
 function draw() {
@@ -38,7 +41,17 @@ function draw() {
 
         rope.handleKeyboard();
         rope.adjust();
-        rope.checkFood();
+        let f = rope.checkFood();
+        if (f) {
+            let e = new Emitter(f.pos.x, f.pos.y, f.color);
+            e.init();
+            emitters.push(e);
+            addFood();
+        }
+
+        food = food.filter(f => f.active);
+        if (!food.length)
+            addFood();
 
         for (let fader of faders) {
             fader.update();
@@ -46,22 +59,38 @@ function draw() {
 
         faders = faders.filter((f) => f.active);
 
-        if (food.state === Food.state.MOBILE)
-            food.move();
-        if (food.state === Food.state.DECAY)
-            food.decay();
+        for (let f of food) {
+            if (f.state === Food.state.MOBILE)
+                f.move();
+            if (f.state === Food.state.DECAY)
+                f.decay();
+        }
+
+        for (let e of emitters) {
+            e.update();
+        }
+
+        emitters = emitters.filter(e => e.active);
     }
 
-    food.pulse();
+    for (let f of food) {
+        f.pulse();
+    }
 
     // DRAW
     for (let fader of faders) {
         fader.draw();
     }
 
+    for (let e of emitters) {
+        e.draw();
+    }
+
     rope.draw();
 
-    food.draw();
+    for (let f of food) {
+        f.draw();
+    }
 
     drawScore();
 
@@ -85,10 +114,6 @@ function keyPressed() {
         resetGame();
     else if (keyIsDown(ENTER) && !gameTimer.active)
         resetGame();
-}
-
-function createFood(x, y, foodState) {
-    food = new Food(x, y, foodState);
 }
 
 function drawScore() {
@@ -136,26 +161,26 @@ function drawTimeText() {
 }
 
 function directionVelocity(negDirection, posDirection, velocity) {
-    return (
-        (keyIsDown(negDirection) || keyIsDown(posDirection)) *
-        velocity *
-        (keyIsDown(negDirection) ? -1 : 1)
-    );
+    let dir = (keyIsDown(negDirection) || keyIsDown(posDirection));
+    let isNeg = (keyIsDown(negDirection) ? -1 : 1);
+    return (dir * velocity * isNeg);
 }
 
 function resetGame() {
     gameTimer.reset();
     score = 0;
+    emitters = [];
+    food = [];
     rope.update(width / 2, height / 2);
     rope.build();
-    createFood(random(width), random(height), Food.state.NORMAL);
+    addFood();
 }
 
-function shuffleArray(array) {
-    for (let i = array.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        const temp = array[i];
-        array[i] = array[j];
-        array[j] = temp;
+function addFood() {
+    if (food.length === MAX_FOOD)
+        return;
+    let count = random(2);
+    for (let i = 0; i < count; i++) {
+        food.push(new Food(random(width), random(height), Food.getRandomState()));
     }
 }
