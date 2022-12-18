@@ -176,7 +176,7 @@ function addFood() {
         return;
     let count = random(2);
     for (let i = 0; i < count; i++) {
-        food.push(new Food(random(width), random(height), Food.getRandomState()));
+        food.push(Food.getRandomFood(random(width), random(height)));
     }
 }
 
@@ -189,21 +189,11 @@ function eat() {
     let f = collision.f;
     let k = collision.k;
 
-    score += getScoreAmt(k.label, f.state);
+    score += f.calcPoints(k.label);
 
     switch (f.state) {
-        case Food.state.DESTROY: {
-            rope.knots.splice(collision.iter, 1);
-            if (!rope.knots.length)
-                break;
-            rope.head = rope.knots[0];
-            rope.recolorKnots();
-            break;
-        }
-        case Food.state.CREATE: {
-            rope.knots.push(new Dot(k.x, k.y, rope.knotColor, k.radius, k.label));
-            break;
-        }
+        case Food.state.DESTROY: rope.destroyKnot(collision.index); break;
+        case Food.state.CREATE: rope.createKnot(k); break;
         case Food.state.SHUFFLE: rope.shuffleKnots(); break;
     }
 
@@ -221,7 +211,7 @@ function eat() {
 function knotFoodCollision() {
     let f = null;
     let k = null;
-    let iter = -1;
+    let index = -1;
     let collision = false;
     for (let i = 0; i < rope.knots.length; i++) {
         let knot = rope.knots[i];
@@ -230,20 +220,12 @@ function knotFoodCollision() {
                 f = fd;
                 k = knot;
                 collision = true;
-                iter = i;
+                index = i;
                 break;
             }
         }
         if (collision)
             break;
     }
-    return { collision, f, k, iter };
-}
-
-function getScoreAmt(knotLabel, foodState) {
-    switch (foodState) {
-        case Food.state.DOUBLE: return knotLabel * 2;
-        case Food.state.TRIPLE: return knotLabel * 3
-        default: return knotLabel;
-    }
+    return { collision, f, k, index };
 }

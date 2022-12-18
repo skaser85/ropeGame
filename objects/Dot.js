@@ -6,7 +6,7 @@ const KNOT_SPEED = 8;
 
 class Dot {
   static copy(dot) {
-    return new Dot(dot.pos.x, dot.pos.y, dot.color, dot.radius);
+    return new Dot(dot.pos.x, dot.pos.y, dot.color, dot.radius, dot.label);
   }
 
   constructor(x, y, _color, radius, label) {

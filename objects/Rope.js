@@ -64,6 +64,18 @@ class Rope {
       }
       this.head = this.knots[0];
     }
+
+    destroyKnot(idx) {
+      this.knots.splice(idx, 1);
+      if (!this.knots.length)
+          return;
+      this.head = this.knots[0];
+      this.recolorKnots();
+    }
+
+    createKnot(knot) {
+        this.knots.push(Dot.copy(knot));
+    }
     
     adjust() {
       for (let i = 1; i < this.knots.length; i++) {
