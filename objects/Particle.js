@@ -40,8 +40,10 @@ class Emitter {
         for (let p of this.particles) {
             p.update();
         }
+        
         this.particles = this.particles.filter(p => p.active);
-        if (!this.particles)
+        
+        if (!this.particles.length)
             this.active = false;
     }
 

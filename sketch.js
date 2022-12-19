@@ -1,15 +1,23 @@
+const DEFAULT_KNOT_RADIUS = 25;
+const KNOTS_COUNT = 5;
+const NORMAL_SPEED = 8;
+const FAST_SPEED = 16;
+const SLOW_SPEED = 4;
+const SPEED_AMT = 5;
+const TIMER_AMT = 60;
+const MAX_FOOD = 10;
+
 let rope;
-let food = [];
-let score = 0;
-let faders = [];
-let bkg_color;
+let food;
+let score;
+let faders;
 let pallete;
-let emitters = [];
-
-let TIMER_AMT = 60;
+let emitters;
 let gameTimer;
+let speedTimer;
+let running = false;
 
-let MAX_FOOD = 20;
+let bkg_color;
 
 function setup() {
     createCanvas(1200, 800);
@@ -20,11 +28,9 @@ function setup() {
     bkg_color = Pallete.brighten(pallete.colors.GREY, 0.5);
 
     gameTimer = new Timer(TIMER_AMT);
+    speedTimer = new Timer(SPEED_AMT);
 
-    rope = new Rope(width / 2, height / 2, 5);
-    rope.build();
-
-    addFood();
+    resetGame();
 }
 
 function draw() {
@@ -34,33 +40,38 @@ function draw() {
 
     gameTimer.update();
 
-    if (!rope.knots.length)
-        gameTimer.active = false;
+    running = gameTimer.active && rope.alive;
 
-    if (gameTimer.active) {
+    // update game play objects
+    if (running) {
+
+        if (speedTimer.active) {
+            speedTimer.update();
+            if (!speedTimer.active)
+                rope.setSpeed(NORMAL_SPEED);
+        }
 
         rope.handleKeyboard();
-        rope.adjust();
 
         eat();
 
         food = food.filter(f => f.active);
         if (!food.length)
-            addFood();
+            createFood();
 
         for (let f of food) {
-            if (f.state === Food.state.MOBILE)
-                f.move();
-            if (f.state === Food.state.DECAY)
-                f.decay();
+            f.update();
         }
-
-        for (let fader of faders) {
-            fader.update();
-        }
-
-        faders = faders.filter((f) => f.active);
     }
+
+    // update asthetic-only objects
+    rope.adjust();
+
+    for (let fader of faders) {
+        fader.update();
+    }
+
+    faders = faders.filter((f) => f.active);
 
     for (let e of emitters) {
         e.update();
@@ -81,25 +92,25 @@ function draw() {
         e.draw();
     }
 
-    rope.draw();
-
     for (let f of food) {
         f.draw();
     }
-
+    
+    rope.draw();
+    
     drawScore();
-
-    drawOffscreenArrow();
-
     drawTimeText();
+    drawOffscreenArrow();
+    if (speedTimer.active)
+        drawSpeedTimer();
 }
 
-function mouseDragged(event) {
+function mouseDragged() {
     if (!gameTimer.active || !rope.knots.length)
         return false;
     let m = createVector(mouseX, mouseY);
     if (rope.head.hovered(m)) {
-        rope.head.update(m.x, m.y);
+        rope.head.updatePos(m);
     }
     return false;
 }
@@ -107,7 +118,7 @@ function mouseDragged(event) {
 function keyPressed() {
     if (keyIsDown(SHIFT) && keyIsDown(ENTER))
         resetGame();
-    else if (keyIsDown(ENTER) && !gameTimer.active)
+    else if (keyIsDown(ENTER) && !running)
         resetGame();
 }
 
@@ -141,37 +152,53 @@ function drawOffscreenArrow() {
 }
 
 function drawTimeText() {
-    push();
-    textSize(28);
     let timeText = !gameTimer.active ? "Game Over!" : `${gameTimer.amt} seconds`;
+    let fontSize = 28;
+    push();
+    textSize(fontSize);
     let tw = textWidth(timeText);
-    let tx = width / 2 - tw / 2;
-    fill(pallete.colors.BLACK);
-    text(timeText, tx + 2, 32);
-    fill(pallete.colors.PURPLE);
-    text(timeText, tx + 1, 31);
-    fill(pallete.colors.CYAN);
-    text(timeText, tx, 30);
+    let tx = (width / 2) - (tw / 2);
     pop();
+    drawGameText(timeText, 28, tx, 30);
 }
 
-function directionVelocity(negDirection, posDirection, velocity) {
-    let dir = (keyIsDown(negDirection) || keyIsDown(posDirection));
-    let isNeg = (keyIsDown(negDirection) ? -1 : 1);
-    return (dir * velocity * isNeg);
+function drawSpeedTimer() {
+    let speedText = `Speed Countdown: ${speedTimer.amt}`;
+    let fontSize = 16;
+    push();
+    textSize(fontSize);
+    let tw = textWidth(speedText);
+    let tx = width - tw - 10;
+    pop();
+    drawGameText(speedText, fontSize, tx, 20);
+}
+
+function drawGameText(txt, fontSize, tx, y) {
+    push();
+    textSize(fontSize);
+    fill(pallete.colors.BLACK);
+    text(txt, tx + 2, y + 2);
+    fill(pallete.colors.PURPLE);
+    text(txt, tx + 1, y + 1);
+    fill(pallete.colors.CYAN);
+    text(txt, tx, y);
+    pop();
 }
 
 function resetGame() {
     gameTimer.reset();
+    speedTimer.active = false;
     score = 0;
     emitters = [];
     food = [];
-    rope.update(width / 2, height / 2);
+    faders = [];
+    rope = new Rope(width / 2, height / 2, KNOTS_COUNT);
     rope.build();
-    addFood();
+    createFood();
+    running = true;
 }
 
-function addFood() {
+function createFood() {
     if (food.length === MAX_FOOD)
         return;
     let count = random(2);
@@ -181,34 +208,55 @@ function addFood() {
 }
 
 function eat() {
-    let collision = knotFoodCollision();
+    let collision = calcCollisions();
 
     if (!collision.collision)
-        return null;
+        return;
 
     let f = collision.f;
     let k = collision.k;
+    let i = collision.index;
 
     score += f.calcPoints(k.label);
 
     switch (f.state) {
-        case Food.state.DESTROY: rope.destroyKnot(collision.index); break;
+        case Food.state.DESTROY: rope.destroyKnot(i); break;
         case Food.state.CREATE: rope.createKnot(k); break;
         case Food.state.SHUFFLE: rope.shuffleKnots(); break;
+        case Food.state.FAST: {
+            rope.setSpeed(FAST_SPEED);
+            speedTimer.reset();
+            break;
+        }
+        case Food.state.SLOW: {
+            rope.setSpeed(SLOW_SPEED);
+            speedTimer.reset();
+            break;
+        }
     }
 
-    faders.push(new Fader(f.pos.x, f.pos.y, k.label, 100));
-    f.active = false;
+    destroyFood(f, k.label);
 
-
-    let e = new Emitter(f.pos.x, f.pos.y, f.color);
-    e.init();
-    emitters.push(e);
-
-    addFood();
+    createFood();
 }
 
-function knotFoodCollision() {
+function destroyFood(f, label) {
+    pushFader(f.pos, label);    
+    pushEmitter(f.pos, f.color);    
+    f.active = false;
+}
+
+function pushEmitter(pos, _color) {
+    let e = new Emitter(pos.x, pos.y, _color);
+    e.init();
+    emitters.push(e);
+}
+
+function pushFader(pos, label) {
+    faders.push(new Fader(pos.x, pos.y, label));
+}
+
+function calcCollisions() {
     let f = null;
     let k = null;
     let index = -1;

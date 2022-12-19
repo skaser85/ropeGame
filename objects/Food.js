@@ -9,6 +9,8 @@ class Food extends Dot {
     TRIPLE: 6,
     TINY: 7,
     CREATE: 8,
+    FAST: 9,
+    SLOW: 10,
   }
 
   static getRandomFood(x, y) {
@@ -23,6 +25,8 @@ class Food extends Dot {
       case Food.state.TRIPLE: return new FoodTriple(x, y);
       case Food.state.TINY: return new FoodTiny(x, y);
       case Food.state.CREATE: return new FoodCreate(x, y);
+      case Food.state.FAST: return new FoodFast(x, y);
+      case Food.state.SLOW: return new FoodSlow(x, y);
     }
   }
 
@@ -56,6 +60,10 @@ class Food extends Dot {
 
   calcPoints(knotPoints) {
     return knotPoints;
+  }
+
+  update() {
+
   }
 
   draw() {
@@ -97,6 +105,10 @@ class FoodDecay extends Food {
     this.active = this.decayTimer.active;
   }
 
+  update() {
+    this.decay();
+  }
+
   draw() {
     super.draw();
     push();
@@ -128,6 +140,10 @@ class FoodMobile extends Food {
     let x = noise(this.xoff) * width;
     let y = noise(this.yoff) * height;
     this.pos.set(x, y);
+  }
+
+  update() {
+    this.move();
   }
 }
 
@@ -161,5 +177,17 @@ class FoodTiny extends Food {
 class FoodCreate extends Food {
   constructor(x, y) {
     super(x, y, "CREATE", pallete.colors.BLUE2, Food.state.CREATE);
+  }
+}
+
+class FoodFast extends Food {
+  constructor(x, y) {
+    super(x, y, "FAST", pallete.colors.BLACK, Food.state.FAST);
+  }
+}
+
+class FoodSlow extends Food {
+  constructor(x, y) {
+    super(x, y, "SLOW", pallete.colors.WHITE, Food.state.SLOW);
   }
 }

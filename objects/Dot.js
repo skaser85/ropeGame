@@ -1,9 +1,3 @@
-const DEFAULT_KNOT_RADIUS = 25;
-const KNOT_TARGET_DIST = 50;
-const ELASTICITY = 10;
-const ROPE_WEIGHT = 3;
-const KNOT_SPEED = 8;
-
 class Dot {
   static copy(dot) {
     return new Dot(dot.pos.x, dot.pos.y, dot.color, dot.radius, dot.label);
@@ -14,6 +8,10 @@ class Dot {
     this.color = _color || pallete.colors.BLACK;
     this.radius = radius ? Number(radius) : DEFAULT_KNOT_RADIUS;
     this.label = label || "";
+  }
+
+  updatePos(v) {
+    this.pos.set(v);
   }
 
   hovered(m) {
@@ -33,20 +31,6 @@ class Dot {
       (this.pos.y + this.radius) > height ||
       (this.pos.y - this.radius) < 0
     );
-  }
-
-  adjust(prevDot) {
-    let distance = this.pos.dist(prevDot.pos);
-    if (distance > KNOT_TARGET_DIST) {
-      let delta = KNOT_TARGET_DIST - distance;
-      let direction = p5.Vector.sub(this.pos, prevDot.pos);
-      direction.normalize().mult(delta / ELASTICITY);
-      this.pos.add(direction);
-    }
-  }
-
-  update(x, y) {
-    this.pos.set(x, y);
   }
 
   draw() {

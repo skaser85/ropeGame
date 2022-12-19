@@ -1,9 +1,9 @@
 class Fader {
-    constructor(x, y, label, cooldownAmt) {
+    constructor(x, y, label) {
       this.x = x;
       this.y = y;
       this.label = label;
-      this.cooldownAmt = cooldownAmt;
+      this.cooldownAmt = 100;
       this.cooldownSpeed = 2;
       this.active = true;
     }
