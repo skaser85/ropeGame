@@ -123,32 +123,7 @@ function keyPressed() {
 }
 
 function drawScore() {
-    push();
-    fill(pallete.colors.BLACK);
-    textSize(28);
-    text(`Score: ${score}`, 10, 30);
-    pop();
-}
-
-function drawOffscreenArrow() {
-    if (!gameTimer.active || !rope.knots.length)
-        return;
-    if (rope.head.offscreen()) {
-        push();
-        let screenCenter = createVector(width / 2, height / 2);
-        let direction = p5.Vector.sub(rope.head.pos, screenCenter).normalize().mult(100);
-        let arrowSize = 20;
-        strokeWeight(5);
-        fill(pallete.colors.BLACK);
-        // draw arrow line
-        translate(screenCenter.x, screenCenter.y);
-        line(0, 0, direction.x, direction.y);
-        // draw arrow head
-        rotate(direction.heading());
-        translate(direction.mag() - arrowSize, 0);
-        triangle(0, arrowSize / 2, 0, -arrowSize / 2, arrowSize, 0);
-        pop();
-    }
+    drawGameText(`Score: ${score}`, 28, 10, 30);
 }
 
 function drawTimeText() {
@@ -183,6 +158,27 @@ function drawGameText(txt, fontSize, tx, y) {
     fill(pallete.colors.CYAN);
     text(txt, tx, y);
     pop();
+}
+
+function drawOffscreenArrow() {
+    if (!gameTimer.active || !rope.knots.length)
+        return;
+    if (rope.head.offscreen()) {
+        push();
+        let screenCenter = createVector(width / 2, height / 2);
+        let direction = p5.Vector.sub(rope.head.pos, screenCenter).normalize().mult(100);
+        let arrowSize = 20;
+        strokeWeight(5);
+        fill(pallete.colors.BLACK);
+        // draw arrow line
+        translate(screenCenter.x, screenCenter.y);
+        line(0, 0, direction.x, direction.y);
+        // draw arrow head
+        rotate(direction.heading());
+        translate(direction.mag() - arrowSize, 0);
+        triangle(0, arrowSize / 2, 0, -arrowSize / 2, arrowSize, 0);
+        pop();
+    }
 }
 
 function resetGame() {
